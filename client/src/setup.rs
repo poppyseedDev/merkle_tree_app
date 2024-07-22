@@ -19,3 +19,7 @@ pub fn generate_sample_files() -> std::io::Result<()> {
 
     Ok(())
 }
+
+fn main() -> std::io::Result<()> {
+    generate_sample_files()
+}

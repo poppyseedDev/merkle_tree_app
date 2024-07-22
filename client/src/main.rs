@@ -1,15 +1,10 @@
 use reqwest::Client;
 use std::fs;
-use merkle_tree::{calculate_merkle_root, validate_proof, generate_proof, hash, SiblingNode};
+use merkle_tree::{calculate_merkle_root, validate_proof, hash, SiblingNode};
 use mockito::{mock};
-
-mod setup;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Generate sample files
-    setup::generate_sample_files()?;
-
     let client = Client::new();
     let files: Vec<String> = vec!["data/file1.txt", "data/file2.txt", "data/file3.txt"]
         .into_iter()
