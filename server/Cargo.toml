@@ -13,3 +13,7 @@ rand = "0.8"
 
 [dependencies.merkle_tree]
 path = "../merkle_tree"
+
+[lib]
+name = "server"
+path = "src/lib.rs"
