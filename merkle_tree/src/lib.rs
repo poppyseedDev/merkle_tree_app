@@ -11,6 +11,7 @@ use std::{
     hash::{Hash, Hasher},
     mem,
 };
+use serde::{Serialize, Deserialize};
 
 /// We'll use Rust's built-in hashing which returns a u64 type.
 /// This alias just helps us understand when we're treating the number as a hash
@@ -104,7 +105,7 @@ pub fn calculate_merkle_root(sentence: &str) -> HashValue {
 /// A representation of a sibling node along the Merkle path from the data
 /// to the root. It is necessary to specify which side the sibling is on
 /// so that the hash values can be combined in the same order.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub enum SiblingNode {
     Left(HashValue),
     Right(HashValue),
