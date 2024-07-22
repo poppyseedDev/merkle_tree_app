@@ -1,0 +1,3 @@
+File2 contains different content.
+It also has multiple lines.
+Here's some more text.

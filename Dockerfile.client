@@ -1,0 +1,13 @@
+FROM rust:latest
+WORKDIR /app
+COPY . .
+
+# Build and run the setup_files binary to create the data files
+RUN cd /app/client && cargo build --release --bin setup
+RUN ./target/release/setup
+
+# Build the main client binary
+RUN cd /app/merkle_tree && cargo build --release
+RUN cd /app/client && cargo build --release --bin client
+
+CMD ["./target/release/client"]

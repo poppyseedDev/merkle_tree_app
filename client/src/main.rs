@@ -1,6 +1,6 @@
 use reqwest::Client;
 use std::fs;
-use merkle_tree::{calculate_merkle_root, validate_proof, hash, SiblingNode};
+use merkle_tree::{calculate_merkle_root, validate_proof, generate_proof, hash, SiblingNode};
 use mockito::{mock};
 
 #[tokio::main]
