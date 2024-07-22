@@ -35,3 +35,28 @@ async fn test_upload_and_proof() {
     assert!(resp.get("root").is_some());
     assert!(resp.get("proof").is_some());
 }
+
+#[actix_web::test]
+async fn test_hello_world() {
+    let state = create_app_state();
+
+    let mut app = test::init_service(App::new()
+        .app_data(state.clone())
+        .configure(configure_services)
+    ).await;
+
+    let req = test::TestRequest::get()
+        .uri("/hello")
+        .to_request();
+
+    let resp = test::call_service(&mut app, req).await;
+    
+    // Check if the response status is success
+    if !resp.status().is_success() {
+        eprintln!("Failed to get successful response: {:?}", resp.status());
+        panic!("Test failed due to unsuccessful response.");
+    }
+    
+    let result = test::read_body(resp).await;
+    assert_eq!(result, "Hello, World!");
+}

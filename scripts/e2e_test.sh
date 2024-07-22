@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Start Docker Compose
-docker-compose up -d --build
+# docker-compose up -d --build
 
-# Wait for the services to be up
-sleep 10
+# # Wait for the services to be up
+# sleep 10
 
 # Upload files
 curl -X POST http://localhost:8000/upload -H "Content-Type: application/json" -d '{
@@ -25,7 +25,18 @@ client_response=$(curl -s http://localhost:8000/download/file1.txt)
 echo "Client download response: $client_response"
 
 # Assuming the client has a function to validate proof
-cargo run --bin client --manifest-path client/Cargo.toml -- validate "$client_response" "$root" "$proof"
+# cargo run --bin client --manifest-path client/Cargo.toml -- validate "$client_response" "$root" "$proof"
+
+# # Clean up
+# docker-compose down
+
+cargo run ./target/release/client/Cargo.toml -- validate '/app/client/file1.txt' '$root' '$proof'
+
+# Run the client validation logic inside the client container
+# docker-compose exec client bash -c "
+# echo '$client_response' > /app/client/file1.txt &&
+# cargo run --bin client --manifest-path /app/client/Cargo.toml -- validate '/app/client/file1.txt' '$root' '$proof'
+# "
 
 # Clean up
 docker-compose down

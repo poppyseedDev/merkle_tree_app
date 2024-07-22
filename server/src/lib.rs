@@ -71,6 +71,11 @@ async fn proof(file_name: web::Path<String>, state: web::Data<AppState>) -> impl
     HttpResponse::NotFound().finish()
 }
 
+#[get("/hello")]
+async fn hello() -> impl Responder {
+    HttpResponse::Ok().body("Hello, World!")
+}
+
 pub fn create_app_state() -> web::Data<AppState> {
     web::Data::new(AppState {
         files: Arc::new(Mutex::new(HashMap::new())),
@@ -82,4 +87,5 @@ pub fn configure_services(cfg: &mut web::ServiceConfig) {
     cfg.service(upload);
     cfg.service(download);
     cfg.service(proof);
+    cfg.service(hello);
 }

@@ -6,4 +6,4 @@ COPY . .
 RUN cd /app/merkle_tree && cargo build --release
 RUN cd /app/server && cargo build --release --bin server
 
-CMD ["./server/target/release/server"]
+CMD ["./target/release/server"]
