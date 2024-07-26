@@ -58,7 +58,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .await?
             .text()
             .await?;
-        println!("Downloaded {}: {:?}", file, res);
+            
+        let res = res.trim_matches('"');  // Remove the additional quotes
+        let res = res.replace("\\n", "\n");
+
+        println!("Downloaded {}", file);
 
         let proof_response: ProofResponse = client.get(format!("http://localhost:8000/proof/{}", filename))
             .send()
@@ -68,12 +72,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let stored_root = fs::read("merkle_root.txt")?;
         let stored_root = u64::from_le_bytes(stored_root[..8].try_into().unwrap());
+
         println!("Stored root: {}", stored_root);
+        println!("Generated root: {}", proof_response.root);
         println!("Res: {}", res);
-        if validate_proof(&stored_root, &res, proof_response.proof) {
-            println!("File {} is verified!", file);
+        println!("Res: {}", &hash(&res).to_string());
+        println!("Proof: {:?}", proof_response.proof);
+        if validate_proof(&stored_root, &hash(&res).to_string(), proof_response.proof) {
+            println!("File {} is verified!", filename);
         } else {
-            println!("File {} verification failed!", file);
+            println!("File {} verification failed!", filename);
         }
     }
 

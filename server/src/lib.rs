@@ -22,13 +22,14 @@ async fn upload(file: web::Json<HashMap<String, String>>, state: web::Data<AppSt
 
     for (filename, content) in file.into_inner() {
         let file_hash = hash(&content);
+        println!("Content: {}", content);
         files.insert(filename.clone(), FileData { content, hash: file_hash.clone() });
         hashes.push(file_hash.to_string());
     }
 
     // Recalculate Merkle root
     let concatenated_hashes = hashes.join(" ");
-    // println!("Sentence: {}", sentence);
+    println!("concatenated_hashes: {}", concatenated_hashes);
     let root = merkle_tree::calculate_merkle_root(&concatenated_hashes);
 
     let mut merkle_root = state.merkle_root.lock().unwrap();
@@ -66,13 +67,13 @@ async fn proof(file_name: web::Path<String>, state: web::Data<AppState>) -> impl
             println!("Concatenated hashes: {}", concatenated_hashes);
             let index = files.keys().position(|k| k == file_name.as_str()).unwrap();
             println!("Index: {}", index);
-            let proof = generate_proof(&concatenated_hashes, index);
-            println!("Root: {:?}", root);
+            let (generated_root, proof) = generate_proof(&concatenated_hashes, index);
+            println!("Root: {:?}", generated_root);
             println!("Proof: {:?}", proof);
             
             let proof_response = ProofResponse {
-                root: *root,
-                proof: proof.1,
+                root: generated_root,
+                proof: proof,
             };
 
             return HttpResponse::Ok().json(proof_response);
