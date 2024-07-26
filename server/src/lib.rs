@@ -18,32 +18,37 @@ pub struct AppState {
 #[post("/upload")]
 async fn upload(file: web::Json<HashMap<String, String>>, state: web::Data<AppState>) -> impl Responder {
     let mut files = state.files.lock().unwrap();
+    let mut hashes: Vec<String> = Vec::new();
+
     for (filename, content) in file.into_inner() {
         let file_hash = hash(&content);
-        files.insert(filename.clone(), FileData { content, hash: file_hash });
+        files.insert(filename.clone(), FileData { content, hash: file_hash.clone() });
+        hashes.push(file_hash.to_string());
     }
 
     // Recalculate Merkle root
-    let sentence: String = files.values().map(|data| data.content.clone()).collect::<Vec<_>>().join(" ");
-    let root = merkle_tree::calculate_merkle_root(&sentence);
+    let concatenated_hashes = hashes.join(" ");
+    // println!("Sentence: {}", sentence);
+    let root = merkle_tree::calculate_merkle_root(&concatenated_hashes);
 
     let mut merkle_root = state.merkle_root.lock().unwrap();
     *merkle_root = Some(root);
 
-    HttpResponse::Ok().body("Files uploaded and Merkle root calculated.")
+    HttpResponse::Ok().json(format!("Root: {}", root))
 }
 
 #[get("/download/{filename}")]
 async fn download(file_name: web::Path<String>, state: web::Data<AppState>) -> impl Responder {
     let files = state.files.lock().unwrap();
-    if let Some(file_data) = files.get(file_name.as_str()) {
+    let filename = file_name.as_str().rsplit('/').next().unwrap_or("");
+    if let Some(file_data) = files.get(filename) {
         HttpResponse::Ok().json(&file_data.content)
     } else {
         HttpResponse::NotFound().finish()
     }
 }
 
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize)]
 struct ProofResponse {
     root: HashValue,
     proof: MerkleProof,
@@ -52,16 +57,21 @@ struct ProofResponse {
 #[get("/proof/{filename}")]
 async fn proof(file_name: web::Path<String>, state: web::Data<AppState>) -> impl Responder {
     let files = state.files.lock().unwrap();
+    let filename = file_name.as_str().rsplit('/').next().unwrap_or("");
     let merkle_root = state.merkle_root.lock().unwrap();
     
-    if let Some(file_data) = files.get(file_name.as_str()) {
-        if let Some(root) = *merkle_root {
-            let sentence: String = files.values().map(|data| data.content.clone()).collect::<Vec<_>>().join(" ");
+    if let Some(file_data) = files.get(filename) {
+        if let Some(root) = &*merkle_root {
+            let concatenated_hashes: String = files.values().map(|data| data.hash.clone().to_string()).collect::<Vec<_>>().join(" ");
+            println!("Concatenated hashes: {}", concatenated_hashes);
             let index = files.keys().position(|k| k == file_name.as_str()).unwrap();
-            let proof = generate_proof(&sentence, index);
+            println!("Index: {}", index);
+            let proof = generate_proof(&concatenated_hashes, index);
+            println!("Root: {:?}", root);
+            println!("Proof: {:?}", proof);
             
             let proof_response = ProofResponse {
-                root: proof.0,
+                root: *root,
                 proof: proof.1,
             };
 

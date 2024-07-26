@@ -13,7 +13,7 @@ struct ProofResponse {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new();
-    let files: Vec<String> = vec!["../data/file1.txt", "../data/file2.txt", "../data/file3.txt"]
+    let files: Vec<String> = vec!["./data/file1.txt", "./data/file2.txt", "./data/file3.txt"]
         .into_iter()
         .map(String::from)
         .collect();
@@ -21,28 +21,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut upload_data = HashMap::new();
     for file in &files {
         let data = fs::read_to_string(file)?;
-        upload_data.insert(file.clone(), data);
+        let filename = file.rsplit('/').next().unwrap().to_string();
+        upload_data.insert(filename, data);
     }
 
     let res = client.post("http://localhost:8000/upload")
         .json(&upload_data)
         .send()
+        .await?
+        .text()
         .await?;
-    println!("Uploaded files: {:?}", res.status());
+        
+    let res = res.trim_matches('"');  // Remove the additional quotes
+    
+    println!("Uploaded files: {:?}", res);
 
-    let sentence = upload_data.values().cloned().collect::<Vec<_>>().join(" ");
-    let root_hash = calculate_merkle_root(&sentence);
-    fs::write("merkle_root.txt", root_hash.to_le_bytes())?;
+    let root_prefix = "Root: ";
+    if let Some(pos) = res.find(root_prefix) {
+        let root_str = &res[pos + root_prefix.len()..];
+        if let Ok(root_hash) = root_str.parse::<u64>() {
+            println!("Merkle root: {}", root_hash);
+            fs::write("merkle_root.txt", root_hash.to_le_bytes())?;
+        } else {
+            eprintln!("Failed to parse Merkle root");
+        }
+    } else {
+        eprintln!("Merkle root not found in response");
+    }
 
     for file in &files {
-        let res = client.get(format!("http://localhost:8000/download/{}", file))
+        let filename = file.rsplit('/').next().unwrap();
+
+        println!("http://localhost:8000/download/{}", filename);
+        let res = client.get(format!("http://localhost:8000/download/{}", filename))
             .send()
             .await?
             .text()
             .await?;
         println!("Downloaded {}: {:?}", file, res);
 
-        let proof_response: ProofResponse = client.get(format!("http://localhost:8000/proof/{}", file))
+        let proof_response: ProofResponse = client.get(format!("http://localhost:8000/proof/{}", filename))
             .send()
             .await?
             .json()
@@ -50,6 +68,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let stored_root = fs::read("merkle_root.txt")?;
         let stored_root = u64::from_le_bytes(stored_root[..8].try_into().unwrap());
+        println!("Stored root: {}", stored_root);
+        println!("Res: {}", res);
         if validate_proof(&stored_root, &res, proof_response.proof) {
             println!("File {} is verified!", file);
         } else {
