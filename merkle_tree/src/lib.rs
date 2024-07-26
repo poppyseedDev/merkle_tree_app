@@ -323,24 +323,35 @@ pub fn validate_compact_multiproof(
     //  - repeat
     // Step 2. compare the given root with the root of the reconstructed tree
 
+    // Step 1: Reconstruct the Merkle tree from the given words and proof
+
+    // Compute hashes for the provided words
     let mut nodes: Vec<HashValue> = words.iter().map(|&word| hash(&word)).collect();
     let mut leaf_indices = proof.leaf_indices;
     let mut proof_hashes = proof.hashes;
 
+    // Check for duplicate indices
+    let mut seen = std::collections::HashSet::new();
+    for &index in &leaf_indices {
+        if !seen.insert(index) {
+            return false; // Duplicate index found
+        }
+    }
+
+    // Return false if the lengths of leaf_indices and nodes don't match
+    if leaf_indices.len() != nodes.len() {
+        return false;
+    }
+
+    // Max leaf index to control loop
     let mut max_leaf_index: usize = *leaf_indices.iter().max().unwrap();
 
-
-    // if there is proof_hashes left in the proof then you keep looping
-
+    // Process the levels of the Merkle tree
     while !proof_hashes.is_empty() || max_leaf_index > 1 {
         let mut next_level_nodes = Vec::new();
         let mut next_level_indices = Vec::new();
 
-        //println!("Leaf indices: {:?}", leaf_indices);
-
-        max_leaf_index = *leaf_indices.iter().max().unwrap();
-
-        //println!("Max leaf index: {:?}", max_leaf_index);
+        max_leaf_index = *leaf_indices.iter().max().unwrap_or(&0);
 
         for i in 0..=max_leaf_index {
             let left_child = i * 2;
@@ -349,44 +360,51 @@ pub fn validate_compact_multiproof(
             match (leaf_indices.contains(&left_child), leaf_indices.contains(&right_child)) {
                 (false, false) => continue,
                 (true, false) => {
-                    let left_child_index: usize = leaf_indices.iter().position(|&x| x == left_child).unwrap_or(0);
-                    
-                    let left_hash = nodes[left_child_index];
-                    //println!("Taking word: {:?}", words[left_child_index]);
-                    if !proof_hashes.is_empty() {
-                        let right_hash = proof_hashes.remove(0);
-                        next_level_nodes.push(concatenate_hash_values(left_hash, right_hash));
+                     // Ensure the left child index is valid
+                    if let Some(left_child_index) = leaf_indices.iter().position(|&x| x == left_child) {
+                        let left_hash = nodes[left_child_index];
+                        if !proof_hashes.is_empty() {
+                            let right_hash = proof_hashes.remove(0);
+                            next_level_nodes.push(concatenate_hash_values(left_hash, right_hash));
+                        } else {
+                            next_level_indices.push(i);
+                        }
                     } else {
-                        next_level_indices.push(i);
-                        break;
+                        return false; // Invalid left child index
                     }
                 },
                 (false, true) => {
-                    let right_child_index: usize = leaf_indices.iter().position(|&x| x == right_child).unwrap_or(0);
-
-                    let left_hash = proof_hashes.remove(0);
-                    let right_hash = nodes[right_child_index];
-                    //println!("Taking word: {:?}", words[right_child_index]);
-
-                    next_level_nodes.push(concatenate_hash_values(left_hash, right_hash));
+                    if let Some(right_child_index) = leaf_indices.iter().position(|&x| x == right_child) {
+                        if !proof_hashes.is_empty() {
+                            let left_hash = proof_hashes.remove(0);
+                            let right_hash = nodes[right_child_index];
+                            next_level_nodes.push(concatenate_hash_values(left_hash, right_hash));
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
                 },
                 (true, true) => {
-                    let left_child_index: usize = leaf_indices.iter().position(|&x| x == left_child).unwrap_or(0);
-                    let right_child_index: usize = leaf_indices.iter().position(|&x| x == right_child).unwrap_or(0);
-                    //println!("Taking word: {:?}{:?}", words[left_child_index], words[right_child_index]);
-
-                    let left_hash = nodes[left_child_index];
-                    let right_hash = nodes[right_child_index];
-                    next_level_nodes.push(concatenate_hash_values(left_hash, right_hash));
+                    if let (Some(left_child_index), Some(right_child_index)) = (
+                        leaf_indices.iter().position(|&x| x == left_child),
+                        leaf_indices.iter().position(|&x| x == right_child),
+                    ) {
+                        if left_child_index < nodes.len() && right_child_index < nodes.len() {
+                            let left_hash = nodes[left_child_index];
+                            let right_hash = nodes[right_child_index];
+                            next_level_nodes.push(concatenate_hash_values(left_hash, right_hash));
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
                 },
             };
-
-            //println!("Left child: {:?}", left_child);
-            //println!("Right child: {:?}", right_child);
         
             next_level_indices.push(i);
-        
-            //println!("Nodes: {:?}", nodes);
         }
 
         nodes = next_level_nodes;
@@ -479,98 +497,6 @@ fn student_test_to_compare_sizes() {
     
 }
 
-/// An answer to the below short answer problems
-#[derive(PartialEq, Debug)]
-pub struct ShortAnswer {
-    /// The answer to the problem
-    pub answer: usize,
-    /// The explanation associated with an answer. This should be 1-3 sentences. No need to make it
-    /// too long!
-    pub explanation: String,
-}
-
-// For the following two problems, you will need to make use of the `compare_proof_sizes` function
-// defined above. Writing a test to check different values can be helpful. Additionally, running
-// your test in release mode will probably speed up your code by approximately 10x. If your test is
-// named `my_test`, you can run the test in release mode with the command:
-// `cargo test --release --package pba-assignment --lib -- p6_merkle::my_test --exact --nocapture`
-//
-// The `explanation` field of the returned answer should be a 1-3 sentence explanation of how you
-// arrived at the answer you did.
-
-/// Given a merkle tree with exactly 2023 items, what is the breakpoint B for the number of proofs
-/// where a compact Merkle multiproof is almost exactly 10x as space-efficient as distinct single
-/// Merkle proofs? In other words, if you request more than B proofs, it will be more than 10x as
-/// space efficient, and if you request less than B proofs, it will be less than 10x as space
-/// efficient.
-pub fn short_answer_1() -> ShortAnswer {
-    //todo!() 
-    /*
-    let sentence = string_of_random_words(2023);
-    let length = 2023;
-    let mut num_proofs = 1;
-    let rng_seed = 12345678;
-    let mut ratio = 0.0;
-
-    while ratio < 10.0 && num_proofs <= length  {
-        let (compact_size, individual_size) = compare_proof_sizes(&sentence, length, num_proofs, rng_seed);
-        ratio = individual_size as f32 / compact_size as f32;
-        println!("Num proof: {}, Current ratio: {}", num_proofs, ratio);
-        num_proofs += 1;
-    }
-    */
-
-    ShortAnswer {
-        answer: 502,
-        explanation: "The function increases the number of proofs until the space-efficiency
-        ratio is greater then 10.".to_string(),
-    }
-}
-
-/// Given a merkle tree with exactly 2023 items where the proofs are only about the first 1000
-/// items, what is the breakpoint B for the number of proofs where a compact Merkle multiproof is
-/// almost exactly 10x as space-efficient as distinct single Merkle proofs? In other words, if you
-/// request more than B proofs, it will be more than 10x as space efficient, and if you request less
-/// than B proofs, it will be less than 10x as space efficient.
-///
-/// Hint: You can set `length` to 1000 in `compare_proof_sizes` in order to simulate this.
-pub fn short_answer_2() -> ShortAnswer {
-    //todo!()
-    /*
-    let sentence = string_of_random_words(2023);
-    let length = 1000;
-    let mut num_proofs = 1;
-    let rng_seed = 12345678;        // SeedableRng
-    let mut ratio = 0.0;
-
-    while ratio < 10.0 {
-        let (compact_size, individual_size) = compare_proof_sizes(&sentence, length, num_proofs, rng_seed);
-        ratio = individual_size as f32 / compact_size as f32;
-        println!("Num proof: {}, Current ratio: {}", num_proofs, ratio);
-
-        num_proofs += 1;
-    }
-    */
-
-    ShortAnswer {
-        answer: 262,
-        explanation: "The function increases the number of proofs until the space-efficiency
-        ratio reached is greater then 10.".to_string(),
-    }
-}
-
-/// This function is not graded. It is just for collecting feedback.
-/// On a scale from 0 - 100, with zero being extremely easy and 100 being extremely hard, how hard
-/// did you find the exercises in this section?
-pub fn how_hard_was_this_section() -> u8 {
-    96
-}
-
-/// This function is not graded. It is just for collecting feedback.
-/// About how much time (in hours) did you spend on the exercises in this section?
-pub fn how_many_hours_did_you_spend_on_this_section() -> f32 {
-    9.0
-}
 
 #[cfg(test)]
 mod tests {
@@ -668,25 +594,128 @@ mod tests {
         assert_eq!(true, validate_compact_multiproof(&proof.0, words, proof.1));
     }
 
+}
+
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+
     #[test]
-    fn short_answer_1_has_answer() {
-        assert_ne!(
-            ShortAnswer {
-                answer: 0,
-                explanation: "".to_string(),
-            },
-            short_answer_1()
-        )
+    fn test_single_word_merkle_root() {
+        let sentence = "hello";
+        let root = calculate_merkle_root(sentence);
+        let expected_root = hash(&"hello");
+        assert_eq!(root, expected_root);
     }
 
     #[test]
-    fn short_answer_2_has_answer() {
-        assert_ne!(
-            ShortAnswer {
-                answer: 0,
-                explanation: "".to_string(),
-            },
-            short_answer_2()
-        )
+    fn test_empty_string_merkle_root() {
+        let sentence = "";
+        let root = calculate_merkle_root(sentence);
+        let expected_root = hash(&"");
+        assert_eq!(root, expected_root);
     }
+
+    #[test]
+    fn test_large_input_merkle_root() {
+        let sentence = string_of_random_words(1024);
+        let root = calculate_merkle_root(&sentence);
+        assert_ne!(root, 0);
+    }
+
+    #[test]
+    fn test_proof_for_last_word() {
+        let sentence = "this is a test sentence with multiple words for merkle tree validation";
+        let index = 11;
+        let (root, proof) = generate_proof(sentence, index);
+        let word = "validation";
+        assert!(validate_proof(&root, word, proof));
+    }
+
+    #[test]
+    fn test_generate_and_validate_proof() {
+        let sentence = "the quick brown fox jumps over the lazy dog";
+        for i in 0..9 {
+            let (root, proof) = generate_proof(sentence, i);
+            let word = sentence.split_whitespace().nth(i).unwrap();
+            assert!(validate_proof(&root, word, proof));
+        }
+    }
+
+    #[test]
+    fn test_invalid_proof() {
+        let sentence = "the quick brown fox jumps over the lazy dog";
+        let (root, proof) = generate_proof(sentence, 0);
+        let invalid_word = "invalid";
+        assert!(!validate_proof(&root, invalid_word, proof));
+    }
+
+    #[test]
+    fn test_multiproof_generation_and_validation() {
+        let sentence = "this is another test sentence for multiproof validation";
+        let indices = vec![1, 3, 6];
+        let words = vec!["is", "test", "multiproof"];
+        let (root, multiproof) = generate_compact_multiproof(sentence, indices.clone());
+        assert!(validate_compact_multiproof(&root, words, multiproof));
+    }
+
+    #[test]
+    fn test_invalid_multiproof() {
+        let sentence = "this is another test sentence for multiproof validation";
+        let indices = vec![1, 3, 6];
+        let words = vec!["is", "test", "multiproof"];
+        let (root, multiproof) = generate_compact_multiproof(sentence, indices.clone());
+        let invalid_words = vec!["invalid", "multiproof", "random"];
+        assert!(!validate_compact_multiproof(&root, invalid_words, multiproof));
+    }
+
+    #[test]
+    fn test_multiproof_edge_case() {
+        let sentence = "edge case with only one word";
+        let indices = vec![0];
+        let words = vec!["edge"];
+        let (root, multiproof) = generate_compact_multiproof(sentence, indices.clone());
+        assert!(validate_compact_multiproof(&root, words, multiproof));
+    }
+
+    #[test]
+    fn test_multiproof_with_duplicates() {
+        let sentence = "this sentence has duplicate words this sentence";
+        let indices = vec![0, 4, 5, 6];
+        let words = vec!["this", "words", "this", "sentence"];
+        let (root, multiproof) = generate_compact_multiproof(sentence, indices.clone());
+        assert!(!validate_compact_multiproof(&root, words, multiproof));
+    }
+
+    #[test]
+    fn test_compare_proof_sizes() {
+        let sentence = string_of_random_words(1024);
+        let length = 1024;
+        let num_proofs = 10;
+        let rng_seed = 12345678;
+        let (compact_size, individual_size) = compare_proof_sizes(&sentence, length, num_proofs, rng_seed);
+        assert!(compact_size < individual_size);
+    }
+
+    #[test]
+    fn test_calculate_generate_and_validate_proof() {
+        // Step 1: Calculate Merkle root
+        let sentence = "the quick brown fox jumps over the lazy dog";
+        let root = calculate_merkle_root(sentence);
+        assert_ne!(root, 0, "Merkle root should not be zero");
+
+        // Step 2: Generate proof for a specific word
+        let index = 3; // Let's choose the word "fox"
+        let (generated_root, proof) = generate_proof(sentence, index);
+        let word = "fox";
+        
+        // Ensure the generated root matches the calculated root
+        assert_eq!(root, generated_root, "Generated root should match the calculated root");
+
+        // Step 3: Validate the proof
+        let is_valid = validate_proof(&root, word, proof);
+        assert!(is_valid, "The proof should be valid for the word 'fox'");
+    }
+
 }
