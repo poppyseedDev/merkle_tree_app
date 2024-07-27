@@ -15,6 +15,16 @@ pub struct AppState {
     pub merkle_root: Arc<Mutex<Option<HashValue>>>,
 }
 
+fn get_sorted_concatenated_hashes(files: &HashMap<String, FileData>) -> String {
+    let mut sorted_filenames: Vec<&String> = files.keys().collect();
+    sorted_filenames.sort();
+    sorted_filenames.iter()
+        .map(|&filename| files[filename].hash.clone().to_string())
+        .collect::<Vec<_>>()
+        .join(" ")
+    // let mut hashes = files.values().map(|data| data.hash.clone().to_string()).collect::<Vec<_>>().join(" ")
+}
+
 #[post("/upload")]
 async fn upload(file: web::Json<HashMap<String, String>>, state: web::Data<AppState>) -> impl Responder {
     let mut files = state.files.lock().unwrap();
@@ -28,7 +38,7 @@ async fn upload(file: web::Json<HashMap<String, String>>, state: web::Data<AppSt
     }
 
     // Recalculate Merkle root
-    let concatenated_hashes = hashes.join(" ");
+    let concatenated_hashes = get_sorted_concatenated_hashes(&files);
     println!("concatenated_hashes: {}", concatenated_hashes);
     let root = merkle_tree::calculate_merkle_root(&concatenated_hashes);
 
@@ -63,9 +73,14 @@ async fn proof(file_name: web::Path<String>, state: web::Data<AppState>) -> impl
     
     if let Some(file_data) = files.get(filename) {
         if let Some(root) = &*merkle_root {
-            let concatenated_hashes: String = files.values().map(|data| data.hash.clone().to_string()).collect::<Vec<_>>().join(" ");
+            let concatenated_hashes: String = get_sorted_concatenated_hashes(&files);
             println!("Concatenated hashes: {}", concatenated_hashes);
-            let index = files.keys().position(|k| k == file_name.as_str()).unwrap();
+
+            // Create a sorted list of filenames to determine the index
+            let mut sorted_filenames: Vec<&String> = files.keys().collect();
+            sorted_filenames.sort();
+            let index = sorted_filenames.iter().position(|&k| k == filename).unwrap();
+
             println!("Index: {}", index);
             let (generated_root, proof) = generate_proof(&concatenated_hashes, index);
             println!("Root: {:?}", generated_root);
