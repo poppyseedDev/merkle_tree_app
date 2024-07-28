@@ -20,6 +20,7 @@ The client can request the i-th file Fi and a Merkle proof Pi for it from the se
   - Deletes local copies after uploading.
   - Stores the Merkle tree root hash locally.
   - Requests files and their proofs from the server.
+  - Saves the requested files
   - Verifies the integrity of the downloaded files using the stored Merkle tree root hash and the received proof.
 
 - **Server**:
@@ -72,9 +73,9 @@ zama_assignment/
 
 1. **Navigate to your project directory** (where `docker-compose.yml` is located).
 2. **Build and run the application** using Docker Compose:
-    ```sh
-    docker-compose up --build
-    ```
+```sh
+docker-compose up --build
+```
 
 ## How It Works
 
@@ -114,18 +115,18 @@ A detailed report explaining the approach, design decisions, and future improvem
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-### Build and Run
+### Build and Run Step by Step
 
 1. **Navigate to the root of your workspace**:
 
     ```sh
-    cd /path/to/merkle_tree_app
+    cd merkle_tree_app
     ```
 
 2. **Build the entire workspace**:
 
     ```sh
-    cargo build
+    cargo build --release
     ```
 
 3. **Run the server**:
@@ -137,7 +138,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 4. **Run the client setup script**:
 
     ```sh
-    cargo run --bin setup_files --manifest-path client/Cargo.toml
+    cargo run --bin setup --manifest-path client/Cargo.toml
     ```
 
 5. **Run the main client**:

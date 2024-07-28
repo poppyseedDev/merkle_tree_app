@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3'
 services:
   server:
     build:
@@ -12,3 +12,5 @@ services:
       dockerfile: Dockerfile.client
     depends_on:
       - server
+    volumes:
+      - ./data:/app/data

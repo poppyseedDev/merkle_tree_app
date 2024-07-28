@@ -1,0 +1,3 @@
+The third file, file3, has its own content.
+It might be similar or different from the others.
+Here are a few more lines of text.

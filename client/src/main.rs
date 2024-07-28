@@ -18,30 +18,60 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(String::from)
         .collect();
 
+    upload_files(&client, &files).await?;
+    delete_files(&files)?;
+    save_merkle_root(&client).await?;
+    download_and_verify_files(&client, &files).await?;
+
+    Ok(())
+}
+
+async fn upload_files(client: &Client, files: &[String]) -> Result<(), Box<dyn std::error::Error>> {
     let mut upload_data = HashMap::new();
-    for file in &files {
+    for file in files {
         let data = fs::read_to_string(file)?;
         let filename = file.rsplit('/').next().unwrap().to_string();
         upload_data.insert(filename, data);
     }
 
-    let res = client.post("http://localhost:8000/upload")
+    let res = client.post("http://server:8000/upload")
         .json(&upload_data)
         .send()
         .await?
         .text()
         .await?;
-        
-    let res = res.trim_matches('"');  // Remove the additional quotes
-    
-    println!("Uploaded files: {:?}", res);
 
+    println!("Uploaded files: {:?}", res.trim_matches('"'));
+
+    Ok(())
+}
+
+fn delete_files(files: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    for file in files {
+        if let Err(e) = fs::remove_file(file) {
+            eprintln!("Failed to delete {}: {}", file, e);
+        } else {
+            println!("Deleted {}", file);
+        }
+    }
+
+    Ok(())
+}
+
+async fn save_merkle_root(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
+    let res = client.get("http://server:8000/merkle_root")
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    let res = res.trim_matches('"');  // Remove the additional quotes
     let root_prefix = "Root: ";
     if let Some(pos) = res.find(root_prefix) {
         let root_str = &res[pos + root_prefix.len()..];
         if let Ok(root_hash) = root_str.parse::<u64>() {
             println!("Merkle root: {}", root_hash);
-            fs::write("merkle_root.txt", root_hash.to_le_bytes())?;
+            fs::write("./data/merkle_root.txt", root_hash.to_le_bytes())?;
         } else {
             eprintln!("Failed to parse Merkle root");
         }
@@ -49,26 +79,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("Merkle root not found in response");
     }
 
-    for file in &files {
+    Ok(())
+}
+
+async fn download_and_verify_files(client: &Client, files: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    for file in files {
         let filename = file.rsplit('/').next().unwrap();
 
-        println!("http://localhost:8000/download/{}", filename);
-        let res = client.get(format!("http://localhost:8000/download/{}", filename))
-            .send()
-            .await?
-            .text()
-            .await?;
-            
-        let res = res.trim_matches('"');  // Remove the additional quotes
-        let res = res.replace("\\n", "\n");
+        let res = download_file(client, filename).await?;
+        fs::write(file, &res)?;
 
-        println!("Downloaded {}", file);
-
-        let proof_response: ProofResponse = client.get(format!("http://localhost:8000/proof/{}", filename))
-            .send()
-            .await?
-            .json()
-            .await?;
+        let proof_response = get_proof(client, filename).await?;
 
         let stored_root = fs::read("merkle_root.txt")?;
         let stored_root = u64::from_le_bytes(stored_root[..8].try_into().unwrap());
@@ -87,6 +108,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+async fn download_file(client: &Client, filename: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let res = client.get(format!("http://server:8000/download/{}", filename))
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    let res = res.trim_matches('"').replace("\\n", "\n");
+    println!("Downloaded {}", filename);
+
+    Ok(res)
+}
+
+async fn get_proof(client: &Client, filename: &str) -> Result<ProofResponse, Box<dyn std::error::Error>> {
+    let proof_response = client.get(format!("http://server:8000/proof/{}", filename))
+        .send()
+        .await?
+        .json()
+        .await?;
+
+    Ok(proof_response)
+}
+
 
 #[tokio::test]
 async fn test_upload_files() -> Result<(), Box<dyn std::error::Error>> {

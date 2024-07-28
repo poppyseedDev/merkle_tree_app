@@ -1,42 +1,22 @@
 #!/bin/bash
 
-# Start Docker Compose
-# docker-compose up -d --build
+set -e
 
-# # Wait for the services to be up
-# sleep 10
+# Generate sample files
+cargo run --bin setup --manifest-path client/Cargo.toml
 
-# Upload files
-curl -X POST http://localhost:8000/upload -H "Content-Type: application/json" -d '{
-    "file1.txt": "This is the content of file1.",
-    "file2.txt": "File2 contains different content."
-}'
+# Build and run the server detached
+docker-compose up --build --force-recreate -d server
 
-# Get proof for a file
-response=$(curl -s http://localhost:8000/proof/file1.txt)
-echo "Proof response: $response"
+# Wait for the server to be fully up and running
+echo "Waiting for server to start..."
+until curl -s http://localhost:8000/hello; do
+  echo "Waiting for server..."
+  sleep 2
+done
 
-# Extract root and proof from response
-root=$(echo $response | jq -r '.root')
-proof=$(echo $response | jq -r '.proof')
+# Run client operations (handled by client Docker container)
+docker-compose up --build --force-recreate client
 
-# Validate proof using the client logic
-client_response=$(curl -s http://localhost:8000/download/file1.txt)
-echo "Client download response: $client_response"
-
-# Assuming the client has a function to validate proof
-# cargo run --bin client --manifest-path client/Cargo.toml -- validate "$client_response" "$root" "$proof"
-
-# # Clean up
-# docker-compose down
-
-cargo run ./target/release/client/Cargo.toml -- validate '/app/client/file1.txt' '$root' '$proof'
-
-# Run the client validation logic inside the client container
-# docker-compose exec client bash -c "
-# echo '$client_response' > /app/client/file1.txt &&
-# cargo run --bin client --manifest-path /app/client/Cargo.toml -- validate '/app/client/file1.txt' '$root' '$proof'
-# "
-
-# Clean up
+# Stop and remove the Docker containers
 docker-compose down
