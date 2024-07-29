@@ -59,6 +59,8 @@ An end-to-end test script is included in the repository to automate the process 
 
 ### Running the End-to-End Test
 
+> WARNING!: Currently there still remain some issues with Docker and this command will fail!
+
 To run the end-to-end test script, use the following command:
 ```sh
 ./scripts/e2e_test.sh
