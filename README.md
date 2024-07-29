@@ -45,6 +45,13 @@ The client can request the i-th file Fi and a Merkle proof Pi for it from the se
     git clone https://github.com/poppyseedDev/zama_assignment.git
     cd zama_assignment
     ```
+### Building and Running the Application
+
+1. **Navigate to your project directory** (where `docker-compose.yml` is located).
+2. **Build and run the application** using Docker Compose:
+    ```sh
+    docker-compose up --build
+    ```
 
 ## End-to-End Test
 
@@ -59,29 +66,24 @@ To run the end-to-end test script, use the following command:
 
 ## Build and Run Step by Step
 
-1. **Navigate to the root of your workspace**:
-    ```sh
-    cd zama_assignment
-    ```
-
-2. **Build the entire workspace**:
+1. **Build the entire workspace**:
     ```sh
     cargo build --release
     ```
 
-3. **Run the server**:
+2. **Run the server**:
     ```sh
     cargo run --manifest-path server/Cargo.toml
     ```
 
-4. **Run the client setup script**:
+3. **Run the client setup script**:
     ```sh
     cargo run --bin setup --manifest-path client/Cargo.toml
     ```
 
-5. **Run the main client**:
+4. **Run the main client**:
     ```sh
-    cargo run --bin client --manifest-path client/Cargo.toml http://server:8000
+    cargo run --bin client --manifest-path client/Cargo.toml http://localhost:8000
     ```
 
 ### Directory Structure
@@ -106,14 +108,6 @@ zama_assignment/
 │       └── main.rs
 └── docker-compose.yml
 ```
-
-### Building and Running the Application
-
-1. **Navigate to your project directory** (where `docker-compose.yml` is located).
-2. **Build and run the application** using Docker Compose:
-    ```sh
-    docker-compose up --build
-    ```
 
 ## How It Works
 

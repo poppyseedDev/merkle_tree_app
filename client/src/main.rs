@@ -27,15 +27,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(String::from)
         .collect();
 
-    upload_files(&client, &files, server_url).await?;
+    upload_files_and_save_merkle_root(&client, &files, server_url).await?;
     delete_files(&files)?;
-    save_merkle_root(&client, server_url).await?;
     download_and_verify_files(&client, &files, server_url).await?;
     
     Ok(())
 }
 
-async fn upload_files(client: &Client, files: &[String], server_url: &str) -> Result<(), Box<dyn std::error::Error>> {
+async fn upload_files_and_save_merkle_root(client: &Client, files: &[String], server_url: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut upload_data = HashMap::new();
     for file in files {
         let data = fs::read_to_string(file)?;
@@ -50,7 +49,22 @@ async fn upload_files(client: &Client, files: &[String], server_url: &str) -> Re
         .text()
         .await?;
 
-    println!("Uploaded files: {:?}", res.trim_matches('"'));
+    let res = res.trim_matches('"');  // Remove the additional quotes
+
+    println!("Uploaded files: {:?}", res);
+
+    let root_prefix = "Root: ";
+    if let Some(pos) = res.find(root_prefix) {
+        let root_str = &res[pos + root_prefix.len()..];
+        if let Ok(root_hash) = root_str.parse::<u64>() {
+            println!("Merkle root: {}", root_hash);
+            fs::write("merkle_root.txt", root_hash.to_le_bytes())?;
+        } else {
+            eprintln!("Failed to parse Merkle root");
+        }
+    } else {
+        eprintln!("Merkle root not found in response");
+    }
 
     Ok(())
 }
@@ -62,30 +76,6 @@ fn delete_files(files: &[String]) -> Result<(), Box<dyn std::error::Error>> {
         } else {
             println!("Deleted {}", file);
         }
-    }
-
-    Ok(())
-}
-
-async fn save_merkle_root(client: &Client, server_url: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let res = client.get(format!("{}/merkle_root", server_url))
-        .send()
-        .await?
-        .text()
-        .await?;
-
-    let res = res.trim_matches('"');  // Remove the additional quotes
-    let root_prefix = "Root: ";
-    if let Some(pos) = res.find(root_prefix) {
-        let root_str = &res[pos + root_prefix.len()..];
-        if let Ok(root_hash) = root_str.parse::<u64>() {
-            println!("Merkle root: {}", root_hash);
-            fs::write("./data/merkle_root.txt", root_hash.to_le_bytes())?;
-        } else {
-            eprintln!("Failed to parse Merkle root");
-        }
-    } else {
-        eprintln!("Merkle root not found in response");
     }
 
     Ok(())
