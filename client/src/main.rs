@@ -3,6 +3,7 @@ use std::fs;
 use merkle_tree::{calculate_merkle_root, validate_proof, generate_proof, hash, SiblingNode};
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::env;
 
 #[derive(Deserialize, Serialize)]
 struct ProofResponse {
@@ -12,21 +13,29 @@ struct ProofResponse {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 2 {
+        eprintln!("Usage: {} <server_url>", args[0]);
+        std::process::exit(1);
+    }
+    let server_url = &args[1];
+    println!("Server URL: {}", server_url);
+
     let client = Client::new();
     let files: Vec<String> = vec!["./data/file1.txt", "./data/file2.txt", "./data/file3.txt"]
         .into_iter()
         .map(String::from)
         .collect();
 
-    upload_files(&client, &files).await?;
+    upload_files(&client, &files, server_url).await?;
     delete_files(&files)?;
-    save_merkle_root(&client).await?;
-    download_and_verify_files(&client, &files).await?;
-
+    save_merkle_root(&client, server_url).await?;
+    download_and_verify_files(&client, &files, server_url).await?;
+    
     Ok(())
 }
 
-async fn upload_files(client: &Client, files: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+async fn upload_files(client: &Client, files: &[String], server_url: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut upload_data = HashMap::new();
     for file in files {
         let data = fs::read_to_string(file)?;
@@ -34,7 +43,7 @@ async fn upload_files(client: &Client, files: &[String]) -> Result<(), Box<dyn s
         upload_data.insert(filename, data);
     }
 
-    let res = client.post("http://server:8000/upload")
+    let res = client.post(format!("{}/upload", server_url))
         .json(&upload_data)
         .send()
         .await?
@@ -58,8 +67,8 @@ fn delete_files(files: &[String]) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn save_merkle_root(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
-    let res = client.get("http://server:8000/merkle_root")
+async fn save_merkle_root(client: &Client, server_url: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let res = client.get(format!("{}/merkle_root", server_url))
         .send()
         .await?
         .text()
@@ -82,14 +91,14 @@ async fn save_merkle_root(client: &Client) -> Result<(), Box<dyn std::error::Err
     Ok(())
 }
 
-async fn download_and_verify_files(client: &Client, files: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+async fn download_and_verify_files(client: &Client, files: &[String], server_url: &str) -> Result<(), Box<dyn std::error::Error>> {
     for file in files {
         let filename = file.rsplit('/').next().unwrap();
 
-        let res = download_file(client, filename).await?;
+        let res = download_file(client, filename, server_url).await?;
         fs::write(file, &res)?;
 
-        let proof_response = get_proof(client, filename).await?;
+        let proof_response = get_proof(client, filename, server_url).await?;
 
         let stored_root = fs::read("merkle_root.txt")?;
         let stored_root = u64::from_le_bytes(stored_root[..8].try_into().unwrap());
@@ -109,8 +118,8 @@ async fn download_and_verify_files(client: &Client, files: &[String]) -> Result<
     Ok(())
 }
 
-async fn download_file(client: &Client, filename: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let res = client.get(format!("http://server:8000/download/{}", filename))
+async fn download_file(client: &Client, filename: &str, server_url: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let res = client.get(format!("{}/download/{}", server_url, filename))
         .send()
         .await?
         .text()
@@ -122,8 +131,8 @@ async fn download_file(client: &Client, filename: &str) -> Result<String, Box<dy
     Ok(res)
 }
 
-async fn get_proof(client: &Client, filename: &str) -> Result<ProofResponse, Box<dyn std::error::Error>> {
-    let proof_response = client.get(format!("http://server:8000/proof/{}", filename))
+async fn get_proof(client: &Client, filename: &str, server_url: &str) -> Result<ProofResponse, Box<dyn std::error::Error>> {
+    let proof_response = client.get(format!("{}/proof/{}", server_url, filename))
         .send()
         .await?
         .json()

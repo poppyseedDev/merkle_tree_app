@@ -1,3 +1,0 @@
-This is the content of file1.
-It has multiple lines.
-Each line contains some text.

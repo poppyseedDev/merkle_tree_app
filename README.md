@@ -20,7 +20,7 @@ The client can request the i-th file Fi and a Merkle proof Pi for it from the se
   - Deletes local copies after uploading.
   - Stores the Merkle tree root hash locally.
   - Requests files and their proofs from the server.
-  - Saves the requested files
+  - Saves the requested files.
   - Verifies the integrity of the downloaded files using the stored Merkle tree root hash and the received proof.
 
 - **Server**:
@@ -44,6 +44,44 @@ The client can request the i-th file Fi and a Merkle proof Pi for it from the se
     ```sh
     git clone https://github.com/poppyseedDev/zama_assignment.git
     cd zama_assignment
+    ```
+
+## End-to-End Test
+
+An end-to-end test script is included in the repository to automate the process of setting up, running, and verifying the client-server application. The script is located at `./scripts/e2e_test.sh`.
+
+### Running the End-to-End Test
+
+To run the end-to-end test script, use the following command:
+```sh
+./scripts/e2e_test.sh
+```
+
+## Build and Run Step by Step
+
+1. **Navigate to the root of your workspace**:
+    ```sh
+    cd zama_assignment
+    ```
+
+2. **Build the entire workspace**:
+    ```sh
+    cargo build --release
+    ```
+
+3. **Run the server**:
+    ```sh
+    cargo run --manifest-path server/Cargo.toml
+    ```
+
+4. **Run the client setup script**:
+    ```sh
+    cargo run --bin setup --manifest-path client/Cargo.toml
+    ```
+
+5. **Run the main client**:
+    ```sh
+    cargo run --bin client --manifest-path client/Cargo.toml http://server:8000
     ```
 
 ### Directory Structure
@@ -73,9 +111,9 @@ zama_assignment/
 
 1. **Navigate to your project directory** (where `docker-compose.yml` is located).
 2. **Build and run the application** using Docker Compose:
-```sh
-docker-compose up --build
-```
+    ```sh
+    docker-compose up --build
+    ```
 
 ## How It Works
 
@@ -94,18 +132,6 @@ docker-compose up --build
    - Generates proofs for the files.
    - Verifies the proofs against the stored root hash.
 
-## Shortcomings and Future Improvements
-
-### Shortcomings
-- The current implementation may not handle large files efficiently.
-- Network communication lacks robust error handling and retries.
-- The server does not persist the files and Merkle tree between restarts.
-
-### Future Improvements
-- Implement chunking for large files to handle them efficiently.
-- Enhance error handling and implement retries for network communication.
-- Add persistent storage for the server to retain files and Merkle tree data across restarts.
-- Improve test coverage and add integration tests.
 
 ## Report
 
@@ -114,36 +140,3 @@ A detailed report explaining the approach, design decisions, and future improvem
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-### Build and Run Step by Step
-
-1. **Navigate to the root of your workspace**:
-
-    ```sh
-    cd merkle_tree_app
-    ```
-
-2. **Build the entire workspace**:
-
-    ```sh
-    cargo build --release
-    ```
-
-3. **Run the server**:
-
-    ```sh
-    cargo run --manifest-path server/Cargo.toml
-    ```
-
-4. **Run the client setup script**:
-
-    ```sh
-    cargo run --bin setup --manifest-path client/Cargo.toml
-    ```
-
-5. **Run the main client**:
-
-    ```sh
-    cargo run --bin client --manifest-path client/Cargo.toml
-    ```
-
