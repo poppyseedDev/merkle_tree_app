@@ -75,6 +75,10 @@ Furthermore, there was an issue with the ordering of the hashes. Currently, the 
 
 ### Future Improvements
 
+### Future Improvements
+
+- **Specifying which files to load**: Allow users to manually specify which files to load instead of automatically loading all files.
+- **Flexible Client Operations**: Provide specific arguments for different client operations, such as uploading or downloading files, so users can choose the desired action at runtime.
 - **Chunking Large Files**: Implement chunking for large files to handle them more efficiently and avoid memory issues.
 - **Persistent Storage**: Add persistent storage for the server to retain files and Merkle tree data across restarts, ensuring data durability.
 - **Enhanced Error Handling**: Improve error handling and implement retries for network communication to handle transient errors more gracefully.
