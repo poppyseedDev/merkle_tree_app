@@ -10,4 +10,4 @@ RUN ./target/release/setup
 RUN cd /app/merkle_tree && cargo build --release
 RUN cd /app/client && cargo build --release --bin client
 
-CMD ["./target/release/client http://server:8000"]
+CMD ["./target/release/client", "http://server:8000"]
