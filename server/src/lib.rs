@@ -40,6 +40,7 @@ async fn upload(file: web::Json<HashMap<String, String>>, state: web::Data<AppSt
     // Recalculate Merkle root
     let concatenated_hashes = get_sorted_concatenated_hashes(&files);
     println!("concatenated_hashes: {}", concatenated_hashes);
+    // TODO: it would be better to use calculate_merkle_root_rec(hashes) directly here
     let root = merkle_tree::calculate_merkle_root(&concatenated_hashes);
 
     let mut merkle_root = state.merkle_root.lock().unwrap();
