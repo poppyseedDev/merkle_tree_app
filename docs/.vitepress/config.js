@@ -17,7 +17,7 @@ export default {
       { text: '🧪 Testing and 🚀 Deployment', link: '/testing-deployment' },
     ],
     nav: [
-      { text: '🐙 GitHub', link: 'https://github.com/poppyseedDev/zama_assignment' }
+      { text: '🐙 GitHub', link: 'https://github.com/poppyseedDev/merkle_tree_app.git' }
     ]
   }
 }

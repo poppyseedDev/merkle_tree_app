@@ -42,7 +42,7 @@ The client can request the i-th file Fi and a Merkle proof Pi for it from the se
 
 1. **Clone the repository**:
     ```sh
-    git clone https://github.com/poppyseedDev/zama_assignment.git
+    git clone https://github.com/poppyseedDev/merkle_tree_app.git
     cd zama_assignment
     ```
 ### Building and Running the Application
