@@ -7,8 +7,6 @@ In this section, we'll explore the practical implementation of Merkle trees in R
 3. **Validating a Proof** ✅
 4. **Working with Compact Multiproofs** 📦
 
----
-
 ## 1. Calculating the Merkle Root Recursively 🌳
 
 The Merkle root is the top-most node of a Merkle tree, representing the combined hash of all the data blocks. Let's break down how you can calculate it recursively.
@@ -52,8 +50,6 @@ Here's what the recursive process looks like:
                  \     /
   Root Level:     Root Hash          ← Combine recursively to get the final Merkle root
 ```
-
----
 
 ## 2. Generating a Proof 🔍
 
@@ -109,7 +105,7 @@ Here's a diagram to illustrate generating a proof:
   Final Proof Path: [H1, B]
 ```
 
----
+
 
 ## 3. Validating a Proof ✅
 
@@ -173,8 +169,6 @@ After generating a proof, you can validate that a data block is indeed part of t
   5. Compare the calculated Root with the original Root Hash.
   6. If the roots match, H2 is successfully validated as part of the tree.
 ```
-
----
 
 ## 4. Working with Compact Multiproofs 📦
 

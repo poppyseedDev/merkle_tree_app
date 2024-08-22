@@ -6,9 +6,9 @@ export default {
       { text: '🏠 Home', link: '/' },
       { text: '🛠️ Project Setup', link: '/setup' },
       { 
-        text: '🌳 Merkle Trees', 
+        text: 'Merkle Tree', 
         items: [
-          { text: ' Starter Code', link: '/merkle-tree/starter-code' },
+          { text: '🌳 Starter Code', link: '/merkle-tree/starter-code' },
           { text: '🔍 Understanding Merkle Trees', link: '/merkle-tree/understanding' },
           { text: '💻 Implementing Merkle Trees', link: '/merkle-tree/implementation' },
         ]
