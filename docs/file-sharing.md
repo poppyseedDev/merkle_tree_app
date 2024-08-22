@@ -7,7 +7,7 @@ In this section, we'll go through how to implement file sharing using the Rust c
 The client is responsible for:
 
 1. **Uploading Files**: Send files to the server.
-2. **Storing the Merkle Root**: Save the Merkle tree's root hash locally.
+2. **Storing the Merkle Root**: Compute the Merkle tree's root hash locally (on the client) and store it.
 3. **Requesting Files**: Download files from the server when needed.
 4. **Verifying Integrity**: Ensure the downloaded files match the original using Merkle proofs.
 
@@ -116,9 +116,4 @@ async fn proof(file_name: web::Path<String>, state: web::Data<AppState>) -> impl
     HttpResponse::NotFound().finish()
 }
 ```
-
-### Issues and Improvements
-
-- **Data Format**: Handling issues like `\\n` and `"` that required additional parsing.
-- **Hash Ordering**: Ordering by filenames manually before hashing. A better approach would be to handle this directly in the Merkle tree implementation.
 

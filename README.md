@@ -1,4 +1,4 @@
-# Zama Assignment
+# Merkle Tree App
 
 This repository contains a Rust implementation of a client-server application that utilizes Merkle trees to ensure file integrity. The application allows a client to upload files to a server, delete local copies, and later download and verify the files' integrity.
 
@@ -59,8 +59,6 @@ An end-to-end test script is included in the repository to automate the process 
 
 ### Running the End-to-End Test
 
-> WARNING!: Currently there still remain some issues with Docker and this command will fail!
-
 To run the end-to-end test script, use the following command:
 ```sh
 ./scripts/e2e_test.sh
@@ -91,7 +89,7 @@ To run the end-to-end test script, use the following command:
 ### Directory Structure
 
 ```
-zama_assignment/
+merkle-tree-app/
 ├── Cargo.lock
 ├── Cargo.toml
 ├── client/
