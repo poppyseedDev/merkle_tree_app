@@ -8,6 +8,7 @@ export default {
       { 
         text: '🌳 Merkle Trees', 
         items: [
+          { text: ' Starter Code', link: '/merkle-tree/starter-code' },
           { text: '🔍 Understanding Merkle Trees', link: '/merkle-tree/understanding' },
           { text: '💻 Implementing Merkle Trees', link: '/merkle-tree/implementation' },
         ]

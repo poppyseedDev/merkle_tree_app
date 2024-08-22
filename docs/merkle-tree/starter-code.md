@@ -1,4 +1,14 @@
-# 
+# 🚀 Merkle Tree Starter Code
+
+Ready to dive into building your Merkle Tree application in Rust? Here’s a quick template to kickstart your project. Whether you're eager to start coding right away or prefer to explore the details first, this guide has got you covered!
+
+> 💡 **Pro Tip:** This template lays the groundwork for your Merkle Tree. Feel free to code along with the guide, filling in the details as you learn. Happy coding! 😊
+
+> ℹ️ **Special Thanks:** This initial template was inspired by the exercises provided by the Polkadot Blockchain Academy. A big shoutout to them for their amazing resources! You can check out more from them [here](https://github.com/Polkadot-Blockchain-Academy).
+
+## Copy and Paste the Template
+
+Copy this starter code into the `./merkle_tree/src/lib.rs` file of your project:
 
 ```rust 
 //! Write a Merkle tree implementation that supports proofs and multiproofs.
